@@ -1,0 +1,158 @@
+1#	admin@blog.com >>> password =  rootadmin
+
+2#	Route::group(['as'=>'admin.','prefix'=>'admin','namespace'=>'Admin','middleware'=>['auth','admin']]) 
+
+	>>'as'=>'admin.' : means that all the names in that group starts with "admin." e.g : ->name("dashboard"); >>> "admin.dashboard"
+	>>'namespace'=>'Admin' : you can add the namespace here in route ]
+	>>'middleware'=>['auth','admin'] : add list of middleware 
+
+3#	@section('title','Home') >> you can pass variable as 'Home' to section 'title' to be @yield('title')  .
+
+4#      <li class="{{ Request::is('admin/dashboard') ? 'active' : '' }}"><a></a></li> : this to make the button which direct to a url 'active' when 		the user is in that url , e.g : 'Dashboard' btn is active when you are in '/admin/dashboard' url 
+ 
+
+5# 	str_slug('Mahmoud') >>> "mahmoud"
+
+6#	>> toastr : "Docs" >> https://packagist.org/packages/brian2694/laravel-toastr
+		    "Demo" >> https://codeseven.github.io/toastr/demo.html
+
+		a- composer require brian2694/laravel-toastr
+
+		b- Brian2694\Toastr\ToastrServiceProvider::class,
+
+		c- 'Toastr'  => Brian2694\Toastr\Facades\Toastr::class,
+
+		d- php artisan vendor:publish
+
+		e- <link rel="stylesheet" href="https://cdn.bootcss.com/toastr.js/latest/css/toastr.min.css">
+		   <script src="https://cdn.bootcss.com/toastr.js/latest/js/toastr.min.js"></script>
+		   {!! Toastr::message() !!}
+		>>> NOTE : add "s" to "http://" to be "https://"
+
+		f- use in function(){ return Toastr::success('Messages in here', 'Title', ["positionClass" => "toast-top-center"]);}
+
+		g- in config/toastr : edit parameter of toastr . 
+
+		h- loop on errors to show in toastr messages : 
+		<script>
+		    @if($errors->any())
+			@foreach($errors->all() as $error)
+			      toastr.error('{{ $error }}','Error',{
+				  closeButton:true,
+				  progressBar:true,
+			       });
+			@endforeach
+		    @endif
+		</script>
+
+7#	sweetAlert2 : https://sweetalert2.github.io/
+
+8 # Images  :
+	a)	in config/filesystems.php : adjust the route of the images storage.  
+			-> disks' => [
+					'public' => [
+					    'driver' => 'local',
+					    'root' => storage_path('app/public'),
+					    'url' => env('APP_URL').'/storage',
+					    'visibility' => 'public',
+					], 
+				]
+
+	b)	Intervention Image  :
+			// open an image file
+			$img = Image::make('public/foo.jpg');
+			// now you are able to resize the instance
+			$img->resize(320, 240);
+
+			>> installation : php composer require intervention/image
+
+
+9# E-mail-Notification : - php artisan make:notification AuthorPost 
+			 - using Notification Facade to send the notification >> 
+				$users = User::where('role_id','1')->get(); // get all the admins 
+			        Notification::send($users, new NewAuthorPost($post)); // pass the $post variable will be used in notification .
+
+			- what is the difference between using send & notify in Notification 
+				1) send :to send a notification to multiple notifiable entities such as a collection of users
+					but should be users on your database if they are not register use notify .
+				2) notify :
+					- for not registered users . (we don't have there emails) , so that we used it to send email to subscribers.
+					- you must use for loop on subscriber to send notify ,
+						@for each subscriber in subscribers :				            
+							Notification::route('mail',$subscriber->email)->notify(new NewPostNotify($post));
+			
+
+10# Queueing Notifications using "jobs" : 
+/1/ Queues allow you to defer the processing of a time consuming task, such as sending an email, until a later time .
+/2/ queueing jobs is useful for applications that wish to prioritize or segment how jobs are processed `.  
+/3/ The queue configuration file is stored in config/queue.php
+/4/ any given queue connection may have multiple "queues" 
+/5/ sync driver means : it will execute jobs immediately. 
+
+/6/ in the queue configuration file contains a queue attribute.
+ This is the default queue that jobs will be dispatched to when they are sent to a given connection.
+ In other words, if you dispatch a job without explicitly defining which queue it should be dispatched to,
+ the job will be placed on the queue that is defined in the queue default ,  e.g : 
+			-> This job is sent to the default queue... Job::dispatch();
+
+			-> This job is sent to the "emails" queue... Job::dispatch()->onQueue('emails');
+// 
+
+	a) php artisan make:job HeavyJob >> creates a class inherted from ShouldQueue class .
+		1- pass the variable in the constructor .
+		2- add the job in the handle function .
+		3- Once you have written your job class, you may dispatch it using the dispatch method, e.g : email. 
+		4- If you would like to delay the execution of a queued job... dispatch($podcast)->delay(now()->addMinutes(10)); where $podcast is the 			   queue 
+
+	b) 
+	-> In order to use the database queue driver, you will need a database table to hold the jobs :
+		php artisan queue:table
+		php artisan migrate >> those two steps creates two files, table in migration called jobs table & queue.php in config .
+	
+	-> we have "'default' => env(key : 'QUEUE_DRIVER', default : 'sync')," in queue.php file & QUEUE_DRIVER=sync  in .env file ,,
+	 	to set the default driver for the default connection 
+
+	c)
+	-> to use queues in your controller e.g: notification , 
+		you must add => in your class interface  "implements ShouldQueue" & "use Queueable" in your class ;
+
+
+	*** what is the difference between extends and implements :
+		- extends used to inheret from classes, e.g :" extends Notification ".
+		- implements used to inheret from interfaces, e.g:" implements ShouldQueue " . 
+	
+	-> to make queue work : you must run that command : php artisan queue:work
+
+
+
+
+validation :   to use 'required|confirmed' the name of password input is "password" and the confirm password input is "password_confirmation"
+		    $this->validate($request,[
+            		'old_password' => 'required',
+            		'password' => 'required|confirmed',
+        		]);
+
+
+html_entity_decode : Convert all HTML entities to their applicable characters so it's used to retrieve html data from database 
+e.g : $post->body has emotions 
+
+
+>> add {{ $posts->links() }} in the blade to add pagination , put >> $posts = Post::latest()->approved()->published()->paginate(6);
+
+>> <a target="_blank"> to make this link open in a new window  <a/>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
